@@ -1,0 +1,7 @@
+{
+  "name": "App dạy tán gái cho 1 cựu chiến sỹ bộ đội cụ Hồ",
+  "description": "Ứng dụng huấn luyện giao tiếp xã hội dành cho nam giới làm việc tại kho, phong cách quân đội.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
