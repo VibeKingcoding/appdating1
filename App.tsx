@@ -4,6 +4,13 @@ import { ViewState, Rank, ScenarioContent } from './types';
 import { generateDailyBriefing, generateIllustration, generateScenario, generateSpeech, generateGraduationExam } from './services/geminiService';
 import { PLACEMENT_TEST_QUESTIONS } from './constants';
 
+// --- Types for AI Studio Environment ---
+// Using a local interface and casting window to avoid conflicts with existing global declarations
+interface AIStudio {
+  hasSelectedApiKey: () => Promise<boolean>;
+  openSelectKey: () => Promise<boolean>;
+}
+
 // --- Icons ---
 const MedalIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
@@ -72,6 +79,34 @@ const ProgressBar = ({ current, total }: { current: number, total: number }) => 
 const LoginScreen = () => {
   const [name, setName] = useState('');
   const setUser = useStore(state => state.setUser);
+  
+  // API Key Check State
+  const [hasApiKey, setHasApiKey] = useState(false);
+  const [checkingKey, setCheckingKey] = useState(true);
+
+  useEffect(() => {
+    const checkKey = async () => {
+      const aistudio = (window as any).aistudio as AIStudio | undefined;
+      if (aistudio) {
+        const has = await aistudio.hasSelectedApiKey();
+        setHasApiKey(has);
+      } else {
+        // Fallback for non-AI Studio environments
+        setHasApiKey(true);
+      }
+      setCheckingKey(false);
+    };
+    checkKey();
+  }, []);
+
+  const handleApiKeyConnect = async () => {
+    const aistudio = (window as any).aistudio as AIStudio | undefined;
+    if (aistudio) {
+      await aistudio.openSelectKey();
+      // Assume success to proceed immediately after selection
+      setHasApiKey(true);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-military-900 p-4 font-body">
@@ -82,22 +117,36 @@ const LoginScreen = () => {
         </div>
         
         <Card className="space-y-6">
-          <h3 className="text-xl font-mono text-gray-300">NHẬP DANH TÍNH CHIẾN SĨ</h3>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Tên hoặc Biệt danh"
-            className="w-full bg-military-900 border border-military-600 text-white p-4 text-center text-lg rounded focus:outline-none focus:border-military-500 font-mono uppercase placeholder-gray-600"
-          />
-          <Button 
-            onClick={() => name && setUser(name)} 
-            variant="primary" 
-            className="w-full"
-            disabled={!name}
-          >
-            XÁC NHẬN NHẬP NGŨ
-          </Button>
+          {checkingKey ? (
+             <div className="text-military-500 animate-pulse font-mono py-8">ĐANG THIẾT LẬP KÊNH LIÊN LẠC...</div>
+          ) : !hasApiKey ? (
+            <div className="space-y-4">
+               <h3 className="text-xl font-mono text-shopee-orange">YÊU CẦU MÃ LỆNH</h3>
+               <p className="text-gray-400 font-body text-sm">Hệ thống chưa kết nối với Google AI Service.</p>
+               <Button onClick={handleApiKeyConnect} variant="accent" className="w-full">
+                 NHẬP API KEY
+               </Button>
+            </div>
+          ) : (
+            <>
+              <h3 className="text-xl font-mono text-gray-300">NHẬP DANH TÍNH CHIẾN SĨ</h3>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Tên hoặc Biệt danh"
+                className="w-full bg-military-900 border border-military-600 text-white p-4 text-center text-lg rounded focus:outline-none focus:border-military-500 font-mono uppercase placeholder-gray-600"
+              />
+              <Button 
+                onClick={() => name && setUser(name)} 
+                variant="primary" 
+                className="w-full"
+                disabled={!name}
+              >
+                XÁC NHẬN NHẬP NGŨ
+              </Button>
+            </>
+          )}
         </Card>
       </div>
     </div>
